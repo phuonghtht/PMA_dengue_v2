@@ -188,7 +188,8 @@ library(rstan)
 
 # stanc("/home/phuonght/Dropbox/1.SHARED_FOLDER/slides_June_2018/PMA_batch2To7_July2019/pop data/models/FOI/Constant/Dengue_FOI_constant.stan")
 
-FOI_Dengue <-"~/Dropbox/1.SHARED_FOLDER/slides_June_2018/PMA_batch2To7_July2019/pop data/models/FOI/Constant/Dengue_FOI_constant.stan"
+# FOI_Dengue <-"~/Dropbox/1.SHARED_FOLDER/slides_June_2018/PMA_batch2To7_July2019/pop data/models/FOI/Constant/Dengue_FOI_constant.stan"
+FOI_Dengue <-"~/Dropbox/PMA_Github/PMA_dengue_v2/PMA codes/FoI/Stan/Dengue_FOI_constant.stan"
 
 
 ```
@@ -222,7 +223,7 @@ Posterior distribution (likelihood function= model  and prior distribution: e.g:
 posterior<-rstan::extract(fit) # specify package rstan rather tham tidyr
 str(posterior)
 #this summarizes the parameters, gets mean,etc. of parameters and metrics of whether converged or not like Rhat and neff
-foisummary<-summary(fit)
+foisummary <- summary(fit)
 foisummary
 tab <- data.frame(foisummary$summary)
 
@@ -799,6 +800,7 @@ secplot <- grid.arrange(sec[[1]]+theme(legend.position = "none"),
 ## Combining all lamda from different model for comparison
 
 ```{r }
+plot_list <- list()
 for(i in (1: 6)){
   site_vec <- c("HC","HC","HC","KH","KH","KH")
   data_vec <- c("C1D1", "C2D1", "C3D1","C1D1", "C2D1", "C3D1")
@@ -812,7 +814,7 @@ for(i in (1: 6)){
   p <- data.frame(lambda = posterior$lambda)
   p$year <- rep("FOI")
   
-  p[i]<-ggplot(p, aes(x=year,y=lambda)) + geom_violin()+
+  p <- ggplot(p, aes(x=year,y=lambda)) + geom_violin()+
     ggtitle(paste(site,dataInput))+
     coord_cartesian(ylim=c (0.0,0.03))+
     theme(plot.title = element_text(hjust=0.5,face="bold",size=12,colour = "blue"),
@@ -824,15 +826,16 @@ for(i in (1: 6)){
     # geom_boxplot(width=0.1)+# add median and quartile
     stat_summary(fun.data=mean_sdl,
                  geom="pointrange", color="red")#Add mean and standard deviation
-}
+plot_list[[i]] = p # store a list of plots
+   }
 
 library(gridExtra)
 library(grid)
-lamb<- grid.arrange(p1,p2,p3,p4,p5,p6,nrow=2,ncol=3,bottom=textGrob("Posterior lambda distribution_constant",gp=gpar(fontsize=20,font=8,col="dark blue")))
+
+lamb<- grid.arrange(grobs = plot_list,nrow=2,ncol=3,bottom=textGrob("Posterior lambda distribution_constant",gp=gpar(fontsize=20,font=8,col="dark blue")))
 
   # # ggsave(filename ="Posterior lambda distribution_constant.png",plot=lamb )
   # ggsave(filename ="~/Desktop/PMA analysis results/FoI/Constant/lamda/Posterior lambda distribution_constant.png",plot=lamb )
-
 
 ```
 
