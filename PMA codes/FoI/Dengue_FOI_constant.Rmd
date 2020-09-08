@@ -14,6 +14,7 @@ rm(list=ls())
 library(base)
 library(dplyr)
 library(tidyr)
+library(loo) 
 
 # Changeable: site:KH or HC?,dataInput?
 site <- "KH" # HC, KH, KH&HC|HC&KH
@@ -178,11 +179,13 @@ n_y <- 2017-2013+max(as.integer(p_year[which(p_year$YEAR==2013),]$age))
 
 l_vecj = length(c(rep(1:round(n_y/5), each =  5)))
 
+#changes made 5/08/2020 Maxine --
 datapp<- list(a = b,
               datap=c(p_year[1:b,6],
                       p_year[1:b,5],
                       p_year[1:b,4]),
-              veca = as.integer(p_year$age)) # vector of age
+              veca = as.integer(p_year$age),
+              vectotal = as.integer(p_year$total)) #vector of total data points per age group
 
 library(rstan)
 
@@ -226,10 +229,54 @@ str(posterior)
 foisummary <- summary(fit)
 foisummary
 tab <- data.frame(foisummary$summary)
-
 # write.csv(tab, paste("FOI constant",p_year$Site[1],dataInput,".csv"))
 
 ```
+
+### Maximum likelihood
+
+```{r}
+# Ref:https://cran.r-project.org/web/packages/loo/vignettes/loo2-with-rstan.html
+# library("loo")
+# Extract pointwise log-likelihood
+# using merge_chains=FALSE returns an array, which is easier to 
+# use with relative_eff()
+loglike = extract_log_lik(fit, parameter_name = "log_like", merge_chains = F)
+
+# as of loo v2.0.0 we can optionally provide relative effective sample sizes
+# when calling loo, which allows for better estimates of the PSIS effective
+# sample sizes and Monte Carlo error
+r_eff <- relative_eff(exp(loglike), cores = 4) 
+
+# preferably use more than 2 cores (as many cores as possible)
+# will use value of 'mc.cores' option if cores is not specified
+loo_1 <- loo(loglike, r_eff = r_eff, cores = 4)
+print(loo_1)
+# The printed output from the loo function shows the estimates elpdˆloo (expected log predictive density), pˆloo (effective number of parameters), and looic=−2elpdˆloo
+# (the LOO information criterion).
+# The line at the bottom of the printed output provides information about the reliability of the LOO approximation (the interpretation of the k
+# parameter is explained in help('pareto-k-diagnostic') and in greater detail in Vehtari, Simpson, Gelman, Yao, and Gabry (2019)). In this case the message tells us that all of the estimates for k are fine.
+
+```
+
+### Comparing models
+To compare this model to an alternative model for the same data we can use the loo_compare function in the loo package. First we’ll fit a second model to the well-switching data, using log(arsenic) instead of arsenic as a predictor:
+
+```{r}
+standata$X[, "arsenic"] <- log(standata$X[, "arsenic"])
+fit_2 <- stan(fit = fit_1, data = standata) 
+
+log_lik_2 <- extract_log_lik(fit_2, merge_chains = FALSE)
+r_eff_2 <- relative_eff(exp(log_lik_2))
+loo_2 <- loo(log_lik_2, r_eff = r_eff_2, cores = 2)
+print(loo_2)
+# Compare
+comp <- loo_compare(loo_1, loo_2)
+##This new object, comp, contains the estimated difference of expected leave-one-out prediction errors between the two models, along with the standard error:
+print(comp) # can set simplify=FALSE for more detailed print output
+
+```
+
 
 ## Posterior distribution of lambda
 
