@@ -1,17 +1,15 @@
 data {
 
-	int<lower=0> a;// number of age groups
+	int<lower=0> a;// number of age groups, split by year
  
-	int datap[3,a]; //vector of sero status (negative, primary, and secondary for all age groups)
+  int datap[3,a]; //vector of sero status (negative, primary (DENV1-4), and secondary for all age groups), split by year
 
-	int veca[a]; //vector of age constitute of specific age rather than ages in order.
-
-	int vectotal[a]; //vector of total data points per age group in dataset
+	int veca[a]; //vector of age constitute of specific age according to year rather than ages in order.
 }
 
 parameters {
 
-real<lower=0, upper=1> lambda;
+real <lower=0, upper=1> lambda;
 
 }
 
@@ -19,23 +17,26 @@ transformed parameters {
 //the probabilities of being neg, primary and secondary at each age group 
 
 real pneg[a];// the probabilities of neg at each age group and year
-real pprimsero[a] ; // the probabilities of primary infection of each serotype at each age group and year
+real pprimsero[a]; // the probabilities of primary infection of each serotype at each age group and year
 real psec[a];// the probabilities of each secondary infection at each age group and year
-real log_like[a];
-vector[3] vecProb;
+
+// store log-likelihood and vector of probabilities for each category
+real log_like[a] ;
+vector[3] vecProb ;
 
 // calculating all these probabilities
 for (ar in 1:a) {
 
 pneg[ar]=exp(-lambda*veca[ar]*4);// the prob of neg at each age group and year
 
-pprimsero[ar]=4*exp(-lambda*veca[ar]*3)*(1-exp(-lambda*veca[ar])); // the probabilities of primary infection of each serotype at each age group and year//primmary infection regardless of numbers of time of infection with such serotype.
+pprimsero[ar]=4*(exp(-3*lambda*veca[ar]))*(1-exp(-lambda*veca[ar]));
 
-psec[ar]= 1-pneg[ar]-pprimsero[ar];// the probabilities of each secondary infection at each age group and year
+psec[ar]= 1 - pneg[ar] - pprimsero[ar] ;
+// the probabilities of each secondary infection at each age group and year
 
-vecProb[1] = pneg[ar];
-vecProb[2] = pprimsero[ar];
-vecProb[3] = psec[ar];
+vecProb[1] = pneg[ar] ;
+vecProb[2] = pprimsero[ar] ;
+vecProb[3] = psec[ar] ;
 
 log_like[ar] = multinomial_lpmf(datap[1:3,ar] | vecProb[1:3]);
 }
@@ -58,7 +59,6 @@ vp[3]=psec[ar];
 //likelihood thing assume multinomial
 datap[1:3, ar]  ~  multinomial(vp) ;
 }
-
 }
 
 generated quantities {
@@ -68,6 +68,4 @@ generated quantities {
 		sumloglike += log_like[ar];
 		}
 }
-
-
 
