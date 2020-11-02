@@ -1,0 +1,361 @@
+---
+title: "Plotting model results"
+author: "Phuong Huynh Thi"
+date: "19/10/2020"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Data input
+```{r data input, echo=FALSE}
+rm(list=ls())
+#loading packages
+library(grid)
+library(gridExtra)
+library(base)
+library(dplyr)
+library(tidyr)
+library(rstan)
+library(DescTools)
+library(data.table)
+
+# Changeable: site:KH or HC?,dataInput?
+site <- "KH" # HC, KH, KH&HC|HC&KH
+dataInput <-"C1D1" # 6 cases: C1D1, C2D1, C3D1, C1F1, C2F1, C3F1
+model <-"SS" # cons, TV, TVSS,SS
+step_year <-5
+
+##Results from different IS and infecting serotype infering models:
+if ( dataInput == "C1D1"){
+    data <- read.csv("~/Dropbox/1.SHARED_FOLDER/slides_June_2018/PMA_batch2To7_July2019/pop data/models/Infecting serotype Model/PredictedIS_B23_567_pred.serotype_C1D1.csv")  
+}
+if ( dataInput == "C1D3"){
+    data <- read.csv("~/Dropbox/1.SHARED_FOLDER/slides_June_2018/PMA_batch2To7_July2019/pop data/models/Infecting serotype Model/PredictedIS_B23_567_pred.serotype_C1D3.csv")  
+}
+if ( dataInput == "C1F1"){
+    data <- read.csv("~/Dropbox/1.SHARED_FOLDER/slides_June_2018/PMA_batch2To7_July2019/pop data/models/Infecting serotype Model/PredictedIS_B23_567_pred.serotype_HomoAssigned_C1F1.csv")  
+}
+if ( dataInput == "C1F3"){
+    data <- read.csv("~/Dropbox/1.SHARED_FOLDER/slides_June_2018/PMA_batch2To7_July2019/pop data/models/Infecting serotype Model/PredictedIS_B23_567_pred.serotype_HomoAssigned_C1F3.csv")  
+}
+
+data$YEAR <- as.factor(data$YEAR)
+data$predictedIS<- ordered(data$predictedIS,levels=c("Secondary","Primary","Neg"))
+data$pred.serotype<- as.factor(data$pred.serotype)
+
+pop<- data[which(!is.na(data$AGE_MIN)&is.na(data$PanbioUnit)),]# cross out acute and ELISA samples
+pop$Site <- substr(pop$sampleID,1,2)
+
+#Agegroup_ 1year
+pop$AgeGroup <-factor(as.factor(floor(pop$Age)),labels=c("[1-2)","[2-3)","[3-4)","[4-5)","[5-6)","[6-7)","[7-8)","[8-9)","[9-10)","[10-11)","[11-12)","[12-13)","[13-14)","[14-15)","[15-16)","[16-17)","[17-18)","[18-19)","[19-20)","[20-21)","[21-22)","[22-23)","[23-24)","[24-25)","[25-26)","[26-27)","[27-28)","[28-29)","[29-30)","[30,31)"))# group as  1year 1 group.
+
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+## Agegroup_ 2 years : 16groups
+
+# pop$AgeGroup <-factor(as.factor(floor(pop$Age/2)+1),labels=c("[1-2)","[2-4)","[4-6)","[6-8)","[8-10)","[10-12)","[12-14)","[14-16)","[16-18)","[18-20)","[20-22)","[22-24)","[24-26)","[26-28)","[28-30)","[30-31)"))
+
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+##Agegroup_3years : 11 groups
+
+# pop$AgeGroup <- floor(pop$Age/3) + 1
+# pop$AgeGroup[which(pop$AgeGroup == 11)] <- 10
+# pop$AgeGroup <- factor(
+#   pop$AgeGroup,
+#   labels = c("[1-3)","[3-6)","[6-9)","[9-12)","[12-15)","[15-18)",
+#              "[18-21)","[21-24)","[24-27)","[27-31)"))
+
+
+```
+
+
+#Reformat data
+```{r data input, echo=FALSE}
+
+# spread(x,y): spread rows of col x into collums, then value of col y will fit in as rows.
+
+#rename(new_name=old_name).
+
+if (site=="HC"){
+   p_year=dplyr::filter(pop,Site=="HC")%>%group_by(AgeGroup,YEAR,Site)%>%dplyr::count(pred.serotype)%>%spread(pred.serotype,n)}
+if(site == "KH"){
+    p_year=dplyr::filter(pop,Site=="KH")%>%group_by(AgeGroup,YEAR,Site)%>%dplyr::count(pred.serotype)%>%spread(pred.serotype,n)}
+if(site == "KH&HC"|site == "HC&KH"){
+    p_year=dplyr::filter(pop)%>%group_by(AgeGroup,YEAR,Site)%>%dplyr::count(pred.serotype)%>%spread(pred.serotype,n)}
+
+# p_year$total <- apply(p_year[,3:8],1,sum,na.rm=T)
+p_year$Prim <- apply(p_year[,4:7],1,sum,na.rm=T) # sum primary case
+p_year$total <- apply(p_year[,4:9],1,sum,na.rm=T)
+p_year <- p_year[order(p_year$YEAR),]
+
+#create function for substr age rather than put age in order, this is useful in case of missing data in a specific age: 
+my_substr <- function(s){
+  if (nchar(s) == 5){
+    t <- substr(s, 4, 4)
+  }else{
+    if (nchar(s) == 6){
+      t <- substr(s, 4, 5)
+    }else{
+      t <- substr(s, 5, 6)
+    }
+  }
+  return(t)
+}
+
+#
+p_year$age<- apply(p_year[,1],1,my_substr)
+
+# Assign NA as 0 because stan does not support NA value:
+
+for (idx in 4:9){
+  idx.na <- which(is.na(p_year[[idx]]))
+  p_year[[idx]][idx.na] <- 0
+}
+  
+# function to get legend from one of the plots => for nicer looking of muliplot
+get_legend<-function(myggplot){
+    tmp <- ggplot_gtable(ggplot_build(myggplot))
+    leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+    legend <- tmp$grobs[[leg]]
+    return(legend)
+}
+
+
+```
+
+
+# Fitting data
+##Real data
+
+Regarding fitting data, the number of samples in each age group is quite small, I gathered samples in groups of 5 years old rather than those of 1. Therefore, there are 6 groups in total: **[1-5), [5-10),[10-15), [15-20), [20-25), [25-31)**
+
+
+```{r real proportion_5yrs age,echo=FALSE, message=FALSE,fig.height=8,fig.width=12}
+
+pop1<- data[which(!is.na(data$AGE_MIN)&is.na(data$PanbioUnit)),]# cross out acute and ELISA samples
+pop1$Site <- substr(pop1$sampleID,1,2)
+
+##Agegroup_5years : 6 groups
+
+pop1$AgeGroup <- floor(pop1$Age/5) + 1
+pop1$AgeGroup[which(pop1$AgeGroup == 7)]<- 6
+pop1$AgeGroup <- factor(
+  pop1$AgeGroup,
+  labels = c("[1-5)","[5-10)","[10-15)","[15-20)","[20-25)","[25-31)"))
+
+p13CI.all=dplyr::filter(pop1,Site==paste(site))%>%group_by(AgeGroup,YEAR)%>%dplyr::count(pred.serotype)%>%spread(pred.serotype,n)
+
+p13CI.all$Primary <- apply(p13CI.all[,3:6],1,sum,na.rm=T) # sum primary cases
+p13CI.all$total <- apply(p13CI.all[,3:8],1,sum,na.rm=T)
+p13CI.all <- p13CI.all[order(p13CI.all$YEAR),]
+
+setnames(p13CI.all, old=c("Neg","1","2","3","4"), new=c("Negative","DENV1","DENV2","DENV3","DENV4"))
+
+# Assign NA as 0:
+
+for (idx in 3:8){
+  idx.na <- which(is.na(p13CI.all[[idx]]))
+  p13CI.all[[idx]][idx.na] <- 0
+}
+
+# p13CI.all<- tidyr::gather(p13CI.all,"IS","n",7:9)# gather 3 variables (Neg,Prim,Secondary) into 1 variables called "IS"
+p13CI.all<- tidyr::gather(p13CI.all,"IS","n",3:8)# gather 6 variables (Neg,Prim [1-4],Secondary) into 1 variables called "IS"
+
+
+p13CI.all<- p13CI.all[order(p13CI.all$YEAR,p13CI.all$AgeGroup),]# sort data by year
+
+p13CI.all<- dplyr::mutate(p13CI.all,est=0,lwr.ci=0,upr.ci=0)# create cols for importing result from multinomCI.
+
+# for ( i in seq(1,length(p13CI.all$AgeGroup),by=3)){# every 3 rows ,do....
+#   p13CI.all[i:(i+2),5:7] <- MultinomCI(c(p13CI.all$n[i:(i+2)]))
+# }
+
+for ( i in seq(1,length(p13CI.all$AgeGroup),by=6)){# every 6 rows ,do....
+  p13CI.all[i:(i+5),7:9] <- MultinomCI(c(p13CI.all$n[i:(i+5)]))
+}
+
+# plot
+list_year <- unique(p_year$YEAR)
+p_real <- list()
+for (idx.year in ( 1 : length(list_year))){
+  
+  p13CI <- dplyr::filter(p13CI.all,YEAR==list_year[idx.year])
+  
+  p_real[[idx.year]] <- ggplot(p13CI, aes(x=AgeGroup,y=est, fill=IS,color=IS))+ geom_point()+
+    ggtitle(paste(site,p13CI$YEAR[1]))+
+    # ggtitle(paste("Proportions",site,p13CI$YEAR[1]))+
+    theme(plot.title = element_text(color="darkblue", size=20, face="bold", hjust = 0.5),
+          axis.title.y = element_blank())+
+    geom_errorbar(aes(ymax = upr.ci, ymin = lwr.ci), width = .25, position=position_dodge(0.5))
+
+}
+
+legend <- get_legend(p_real[[5]])
+
+library(grid)
+library(gridExtra)
+grid.arrange(p_real[[1]]+theme(legend.position = "none"),
+             p_real[[2]]+theme(legend.position = "none"),
+             p_real[[3]]+theme(legend.position = "none"),
+             p_real[[4]]+theme(legend.position = "none"),
+             p_real[[5]]+theme(legend.position = "none"),
+             legend, nrow=3,ncol=2,
+             bottom = textGrob(paste("DENV proportion in",site),gp=gpar(fontsize=20,fontface="bold"))) # all plot in one page
+
+
+```
+
+## Estimated proportions within 95% CI
+```{r estimated proportion, echo=FALSE, message=FALSE,fig.height=8,fig.width=12}
+
+if(model =="cons"|model =="SS"){
+  fit <- readRDS(paste("/home/phuong/pCloudDrive/PMA analysis results/FoI/RDS/FOI",model,site,dataInput,".rds"))
+}
+if(model =="TV"|model =="TVSS"){
+  fit <- readRDS(paste("/home/phuong/pCloudDrive/PMA analysis results/FoI/RDS/FOI",model,step_year,"yr(s)",site,dataInput,".rds"))
+}
+
+posterior<-rstan::extract(fit)
+# p <- data.frame(lambda = posterior$lambda,
+#                   year = rep("FOI",length(posterior$lambda)))
+foisummary <- summary(fit)
+
+pest.all<- data.frame(foisummary$summary)#
+
+pest.all<- pest.all[which(substr(row.names(pest.all),1,4)=="pneg"|
+                            substr(row.names(pest.all),1,4)=="ppri"|
+                            substr(row.names(pest.all),1,4)=="psec"),] # get rid of irrelevant rows, 1st row is lambda
+d = length(pest.all$mean)/6 #no.of data point: 6 groups: neg,prim[1:4],sec,
+
+pest.all$IS <- rep(c("Neg_est","DENV1_est","DENV2_est","DENV3_est","DENV4_est","Second_est"),c(d,d,d,d,d,d))
+
+pest.all$AgeGroup<- as.integer(rep(p_year$age,6))
+pest.all$YEAR<- as.integer(rep(as.character(p_year$YEAR),6))
+# pest.all$year<- as.factor(pest.all$year)
+
+
+```
+
+## Fitting
+
+```{r estimated prop vs actual prop ,echo=FALSE,fig.height=8,fig.width=12 }
+# actual proportion
+p<- p13CI.all
+p<- p[order(p$IS),]
+
+#create function for substr assigning age group as one value, this create the same age structure with p1 data frame below. This function has run in previous chunk => no need re-run in this chunk!
+
+my_substr <- function(s){
+  if (nchar(s) == 5){
+    t <- substr(s, 4, 4)
+  }else{
+    if (nchar(s) == 6){
+      t <- substr(s, 4, 5)
+    }else{
+      t <- substr(s, 5, 6)
+    }
+  }
+  return(t)
+}
+
+#
+p$AgeGroup<- apply(p[,1],1,my_substr)
+p <- p[,-c(3,4,6)] # only keep these variables:"AgeGroup","YEAR","IS","est","lwr.ci","upr.ci"
+
+# estimated proportion
+p1 <- pest.all[,c("AgeGroup","YEAR","IS","mean","X2.5.","X97.5.")]
+
+colnames(p1)<- c("AgeGroup","YEAR","IS","est","lwr.ci","upr.ci")
+
+pc.all<- rbind(data.frame(p), data.frame(p1))
+
+
+pc.all$AgeGroup <- as.numeric(pc.all$AgeGroup)
+
+# fiting data
+immune <- c("Neg","DENV1","DENV2","DENV3","DENV4","Second")
+
+for ( i in (1:length(immune))){
+  IS <- immune[i]
+  
+  fiting <-list()
+  for ( idx.year in (1:length(list_year))){
+    
+     if(IS=="Neg"){
+      pc <- dplyr::filter(pc.all,YEAR==list_year[idx.year],IS=="Neg_est"|IS=="Negative")
+    }
+    if(IS=="DENV1"){
+      pc <- dplyr::filter(pc.all,YEAR==list_year[idx.year],IS=="DENV1_est"|IS=="DENV1")
+      pc$IS <- factor(pc$IS)
+      pc$IS <-relevel(pc$IS,ref = "DENV1_est")
+    }
+    if(IS=="DENV2"){
+      pc <- dplyr::filter(pc.all,YEAR==list_year[idx.year],IS=="DENV2_est"|IS=="DENV2")
+      pc$IS <- factor(pc$IS)
+      pc$IS <-relevel(pc$IS,ref = "DENV2_est")
+    }
+    if(IS=="DENV3"){
+      pc <- dplyr::filter(pc.all,YEAR==list_year[idx.year],IS=="DENV3_est"|IS=="DENV3")
+      pc$IS <- factor(pc$IS)
+      pc$IS <-relevel(pc$IS,ref = "DENV3_est")
+    }
+    if(IS=="DENV4"){
+      pc <- dplyr::filter(pc.all,YEAR==list_year[idx.year],IS=="DENV4_est"|IS=="DENV4")
+      pc$IS <- factor(pc$IS)
+      pc$IS <-relevel(pc$IS,ref = "DENV4_est")
+    }
+    if(IS=="Second"){
+      pc <- dplyr::filter(pc.all,YEAR==list_year[idx.year],IS=="Second_est"|IS=="Secondary")
+    }
+    
+    fiting[[idx.year]] <- ggplot(pc,aes(x=AgeGroup,y=est,colour=IS))+
+      geom_point()+
+      xlim (1,31)+
+      ylim (0,1)+
+      ggtitle(paste(dataInput,site,pc$YEAR[1]))+
+      theme(plot.title = element_text(color="darkblue", size=20, face="bold", hjust = 0.5),
+            axis.text = element_text(face = "bold"),
+            axis.title.y = element_blank())+
+      geom_errorbar(aes(ymax = upr.ci, ymin = lwr.ci), width = .25,position = position_dodge(0.5))# move CI to the left or the right a bit
+  }
+  
+  legend <- get_legend(fiting[[5]])
+  
+ if(model=="cons"|model=="SS"){
+    mplots<- grid.arrange(fiting[[1]]+theme(legend.position = "none"),
+                        fiting[[2]]+theme(legend.position = "none"),
+                        fiting[[3]]+theme(legend.position = "none"),
+                        fiting[[4]]+theme(legend.position = "none"),
+                        fiting[[5]]+theme(legend.position = "none"),
+                        legend, nrow=3,ncol=2,
+                        bottom = textGrob(paste("Model fit FoI_",model),gp=gpar(fontsize=20,fontface="bold"))) # all plot in one page
+ }
+  if(model=="TV"|model=="TVSS"){
+    mplots<- grid.arrange(fiting[[1]]+theme(legend.position = "none"),
+                        fiting[[2]]+theme(legend.position = "none"),
+                        fiting[[3]]+theme(legend.position = "none"),
+                        fiting[[4]]+theme(legend.position = "none"),
+                        fiting[[5]]+theme(legend.position = "none"),
+                        legend, nrow=3,ncol=2,
+                        bottom = textGrob(paste("Model fit FoI_",model,step_year,"yr(s"),gp=gpar(fontsize=20,fontface="bold"))) # all plot in one page
+ }
+  
+##Saving the plots
+  if(model=="cons"|model=="SS"){
+    ggsave(filename=paste("/home/phuong/pCloudDrive/PMA analysis results/figures/fitting/",IS,"_",model,dataInput,site,".png"), plot = mplots)
+  }
+  if(model=="TV"|model=="TVSS"){
+    ggsave(filename=paste("/home/phuong/pCloudDrive/PMA analysis results/figures/fitting/",IS,"_",model,step_year,"yr(s)",dataInput,site,".png"), plot = mplots)
+  }
+  
+  
+}
+
+
+```
+
+
