@@ -27,7 +27,7 @@ library(data.table)
 # Changeable: site:KH or HC?,dataInput?
 site <- "KH" # HC, KH, KH&HC|HC&KH
 dataInput <-"C1D1" # 6 cases: C1D1, C2D1, C3D1, C1F1, C2F1, C3F1
-model <-"SS" # cons, TV, TVSS,SS
+model <-"TVSS" # cons, TV, TVSS,SS
 step_year <-5
 
 ##Results from different IS and infecting serotype infering models:
@@ -346,10 +346,10 @@ for ( i in (1:length(immune))){
   
 ##Saving the plots
   if(model=="cons"|model=="SS"){
-    ggsave(filename=paste("/home/phuong/pCloudDrive/PMA analysis results/figures/fitting/",IS,"_",model,dataInput,site,".png"), plot = mplots)
+    ggsave(filename=paste("/home/phuong/pCloudDrive/PMA analysis results/figures/fitting/",site,"_",model,"_",IS,dataInput,".png"), plot = mplots)
   }
   if(model=="TV"|model=="TVSS"){
-    ggsave(filename=paste("/home/phuong/pCloudDrive/PMA analysis results/figures/fitting/",IS,"_",model,step_year,"yr(s)",dataInput,site,".png"), plot = mplots)
+    ggsave(filename=paste("/home/phuong/pCloudDrive/PMA analysis results/figures/fitting/",site,"_",model,step_year,"yr(s)","_",IS,dataInput,".png"), plot = mplots)
   }
   
   

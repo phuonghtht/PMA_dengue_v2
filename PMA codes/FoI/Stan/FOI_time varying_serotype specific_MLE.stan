@@ -1,16 +1,19 @@
 data {
     int<lower=0> a;// number of age groups by years
+    int step_year;
+    int<lower=0> l_vecj;
     int veca[a]; //vector age constitute of specific age, useful in case missing age.
     int vecy[a]; //vector year, specific year of data is indicated. 
-    int lamb_y; // number of years that FoI is estimated in the model ( vary in case of grouping years)
-    int n_y;  // number of years that FoI can be estimated from the data.
-    int vecj[n_y]; // vector vecj comprises integer value => for index of lambda in case of grouping
+    
+    //int lamb_y; // number of years that FoI is estimated in the model ( vary in case of grouping years)
+    //int n_y;  // number of years that FoI can be estimated from the data.
+    int vecj[l_vecj]; // vector vecj comprises integer value => for index of lambda in case of grouping
     int datap[6,a]; ////for 2013 this will be sixgroups (neg,primary(1,2,3,4),and secondary  for all age groups)
 }
 
 parameters {
 //  real <lower=0, upper=1> lambda;
-  matrix<lower=0,upper=1>[4,lamb_y] lambda;// 2017-1984 =34/5=7years group
+  matrix<lower=0,upper=1>[4,l_vecj/step_year] lambda;//
 }
 
 transformed parameters {
@@ -79,7 +82,7 @@ model {
 // lambda ~ beta(2,5);
 
   for (i in 1:4){
-    for (j in 1:lamb_y){
+    for (j in 1:(l_vecj/step_year)){
       lambda[i,j] ~ beta(2,5); // lambda is a matrix => vector distribution
     }
   }

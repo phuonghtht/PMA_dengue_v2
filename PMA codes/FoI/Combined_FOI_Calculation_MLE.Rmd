@@ -10,8 +10,6 @@ editor_options:
 ```{r set working directory}
 
 rm(list=ls())
-# setwd("~/Traineeship/Dengue/slides_June_2018/PMA_batch2To7_July2019/pop data/models/FOI/CombinedCode_Maxine")
-setwd("/home/phuong/Dropbox/PMA_Github/PMA_dengue_v2/PMA codes/Code with likelihood calculation")
 
 library(rstan)
 util <- new.env()
@@ -54,21 +52,6 @@ step_year <- 5 # non-TV models, input 0
 if ( dataInput == "C1D1"){
     data <- read.csv("~/Dropbox/1.SHARED_FOLDER/slides_June_2018/PMA_batch2To7_July2019/pop data/models/Infecting serotype Model/PredictedIS_B23_567_pred.serotype_C1D1.csv")  
 }
-if ( dataInput == "C2D1"){
-    data <- read.csv("~/Dropbox/1.SHARED_FOLDER/slides_June_2018/PMA_batch2To7_July2019/pop data/models/Infecting serotype Model/PredictedIS_B23_567_pred.serotype_C2D1.csv")  
-}
-if ( dataInput == "C3D1"){
-    data <- read.csv("~/Dropbox/1.SHARED_FOLDER/slides_June_2018/PMA_batch2To7_July2019/pop data/models/Infecting serotype Model/PredictedIS_B23_567_pred.serotype_C3D1.csv")  
-}
-if ( dataInput == "C1D2"){
-    data <- read.csv("~/Dropbox/1.SHARED_FOLDER/slides_June_2018/PMA_batch2To7_July2019/pop data/models/Infecting serotype Model/PredictedIS_B23_567_pred.serotype_C1D2.csv")  
-}
-if ( dataInput == "C2D2"){
-    data <- read.csv("~/Dropbox/1.SHARED_FOLDER/slides_June_2018/PMA_batch2To7_July2019/pop data/models/Infecting serotype Model/PredictedIS_B23_567_pred.serotype_C2D2.csv")  
-}
-if ( dataInput == "C3D2"){
-    data <- read.csv("~/Dropbox/1.SHARED_FOLDER/slides_June_2018/PMA_batch2To7_July2019/pop data/models/Infecting serotype Model/PredictedIS_B23_567_pred.serotype_C3D2.csv")  
-}
 if ( dataInput == "C1D3"){
     data <- read.csv("~/Dropbox/1.SHARED_FOLDER/slides_June_2018/PMA_batch2To7_July2019/pop data/models/Infecting serotype Model/PredictedIS_B23_567_pred.serotype_C1D3.csv")  
 }
@@ -81,31 +64,9 @@ if ( dataInput == "C3D3"){
 if ( dataInput == "C1F1"){
     data <- read.csv("~/Dropbox/1.SHARED_FOLDER/slides_June_2018/PMA_batch2To7_July2019/pop data/models/Infecting serotype Model/PredictedIS_B23_567_pred.serotype_HomoAssigned_C1F1.csv")  
 }
-if ( dataInput == "C2F1"){
-    data <- read.csv("~/Dropbox/1.SHARED_FOLDER/slides_June_2018/PMA_batch2To7_July2019/pop data/models/Infecting serotype Model/PredictedIS_B23_567_pred.serotype_HomoAssigned_C2F1.csv")  
-}
-if ( dataInput == "C3F1"){
-    data <- read.csv("~/Dropbox/1.SHARED_FOLDER/slides_June_2018/PMA_batch2To7_July2019/pop data/models/Infecting serotype Model/PredictedIS_B23_567_pred.serotype_HomoAssigned_C3F1.csv")  
-}
-if ( dataInput == "C1F2"){
-    data <- read.csv("~/Dropbox/1.SHARED_FOLDER/slides_June_2018/PMA_batch2To7_July2019/pop data/models/Infecting serotype Model/PredictedIS_B23_567_pred.serotype_HomoAssigned_C1F2.csv")  
-}
-if ( dataInput == "C2F2"){
-    data <- read.csv("~/Dropbox/1.SHARED_FOLDER/slides_June_2018/PMA_batch2To7_July2019/pop data/models/Infecting serotype Model/PredictedIS_B23_567_pred.serotype_HomoAssigned_C2F2.csv")  
-}
-if ( dataInput == "C3F2"){
-    data <- read.csv("~/Dropbox/1.SHARED_FOLDER/slides_June_2018/PMA_batch2To7_July2019/pop data/models/Infecting serotype Model/PredictedIS_B23_567_pred.serotype_HomoAssigned_C3F2.csv")  
-}
 if ( dataInput == "C1F3"){
     data <- read.csv("~/Dropbox/1.SHARED_FOLDER/slides_June_2018/PMA_batch2To7_July2019/pop data/models/Infecting serotype Model/PredictedIS_B23_567_pred.serotype_HomoAssigned_C1F3.csv")  
 }
-if ( dataInput == "C2F3"){
-    data <- read.csv("~/Dropbox/1.SHARED_FOLDER/slides_June_2018/PMA_batch2To7_July2019/pop data/models/Infecting serotype Model/PredictedIS_B23_567_pred.serotype_HomoAssigned_C2F3.csv")  
-}
-if ( dataInput == "C3F3"){
-    data <- read.csv("~/Dropbox/1.SHARED_FOLDER/slides_June_2018/PMA_batch2To7_July2019/pop data/models/Infecting serotype Model/PredictedIS_B23_567_pred.serotype_HomoAssigned_C3F3.csv")  
-}
-
 
 data$YEAR <- as.factor(data$YEAR)
 data$predictedIS<- ordered(data$predictedIS,levels=c("Secondary","Primary","Neg"))
@@ -242,16 +203,16 @@ datapp<- list(a = b,
 # Stan codes 
 ```{r}
 if (modelType == "cons"){
-  FOI_Dengue <-"~/Dropbox/PMA_Github/PMA_dengue_v2/PMA codes/FoI/Stan/FOI_constant_MLE_Maxine.stan"
+  FOI_Dengue <-"~/Dropbox/PMA_Github/PMA_dengue_v2/PMA codes/FoI/Stan/FOI_constant_MLE.stan"
 }
 if (modelType == "SS"){
   FOI_Dengue <-"~/Dropbox/PMA_Github/PMA_dengue_v2/PMA codes/FoI/Stan/FOI_serotype_specific_MLE.stan"
 }
 if (modelType == "TV"){
-  FOI_Dengue <- "~/Dropbox/PMA_Github/PMA_dengue_v2/PMA codes/FoI/Stan/FOI_time varying_MLE_Maxine.stan"
+  FOI_Dengue <- "~/Dropbox/PMA_Github/PMA_dengue_v2/PMA codes/FoI/Stan/FOI_time varying_MLE.stan"
 }
 if (modelType == "TVSS"){
-  FOI_Dengue <-"~/Dropbox/PMA_Github/PMA_dengue_v2/PMA codes/FoI/Stan/FOI_time varying_serotype specific_MLE_Maxine.stan"
+  FOI_Dengue <-"~/Dropbox/PMA_Github/PMA_dengue_v2/PMA codes/FoI/Stan/FOI_time varying_serotype specific_MLE.stan"
 }
 
 ```
