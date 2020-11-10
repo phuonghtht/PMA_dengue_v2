@@ -7,13 +7,6 @@ editor_options:
   chunk_output_type: console
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-rm(list=ls())
-library(loo)
-library(rstan)
-
-```
 
 #loading saved fits
 ```{r}
@@ -21,39 +14,48 @@ library(rstan)
 #https://www.jmp.com/support/help/en/15.2/index.shtml#page/jmp/likelihood-aicc-and-bic.shtml
 #https://mc-stan.org/rstan/reference/stan.html
 
+rm(list=ls())
+library(loo)
+library(rstan)
+
 # loading the model fit_MLE
 site = "HC";dataInput = "C1D1"
+model <- "TVSS" # TV, SS, TVSS
+groupAge <-1 # HC:137  KH:125
+step_year <- 1
+dataYear <- 35
+if(site =="HC") {
+  dataPoint <- 137
+}
+if(site =="KH") {
+  dataPoint <- 125
+}
 
-fit1<- readRDS(paste('/home/phuong/pCloudDrive/PMA analysis results/FoI/RDS/FOI constant',site, dataInput, '.rds'))
-fit2.1 <- readRDS(paste('/home/phuong/pCloudDrive/PMA analysis results/FoI/RDS/FOI timvarying 1 yr(s)',site, dataInput, '.rds'))
-fit2.2 <- readRDS(paste('/home/phuong/pCloudDrive/PMA analysis results/FoI/RDS/FOI timvarying 2 yr(s)',site, dataInput, '.rds'))
-fit2.3 <- readRDS(paste('/home/phuong/pCloudDrive/PMA analysis results/FoI/RDS/FOI timvarying 3 yr(s)',site, dataInput, '.rds'))
-fit2.4 <- readRDS(paste('/home/phuong/pCloudDrive/PMA analysis results/FoI/RDS/FOI timvarying 4 yr(s)',site, dataInput, '.rds'))
-fit2.5 <- readRDS(paste('/home/phuong/pCloudDrive/PMA analysis results/FoI/RDS/FOI timvarying 5 yr(s)',site, dataInput, '.rds'))
-
-fit3<- readRDS(paste('/home/phuong/pCloudDrive/PMA analysis results/FoI/RDS/FOI serotypes',site, dataInput, '.rds'))
-fit4.1<- readRDS(paste('/home/phuong/pCloudDrive/PMA analysis results/FoI/RDS/FOI timevarying_serotypes 1 yr(s)',site, dataInput, '.rds'))
-fit4.2<- readRDS(paste('/home/phuong/pCloudDrive/PMA analysis results/FoI/RDS/FOI timevarying_serotypes 2 yr(s)',site, dataInput, '.rds'))
-fit4.3<- readRDS(paste('/home/phuong/pCloudDrive/PMA analysis results/FoI/RDS/FOI timevarying_serotypes 3 yr(s)',site, dataInput, '.rds'))
-fit4.4<- readRDS(paste('/home/phuong/pCloudDrive/PMA analysis results/FoI/RDS/FOI timevarying_serotypes 4 yr(s)',site, dataInput, '.rds'))
-fit4.5<- readRDS(paste('/home/phuong/pCloudDrive/PMA analysis results/FoI/RDS/FOI timevarying_serotypes 5 yr(s)',site, dataInput, '.rds'))
+if(model =="cons"|model == "SS"){
+  fit <- readRDS(paste("/home/phuong/pCloudDrive/PMA analysis results/FoI/RDS/FOI",model,"groupAge",groupAge,site,dataInput, '.rds'))
+}
+if(model =="TV"|model == "TVSS"){
+  fit <- readRDS(paste("/home/phuong/pCloudDrive/PMA analysis results/FoI/RDS/FOI",model,"groupAge",groupAge,"step_year",step_year,site,dataInput, ".rds"))
+}
 
 
+# fit1<- readRDS(paste("/home/phuong/pCloudDrive/PMA analysis results/FoI/RDS/FOI cons groupAge",groupAge,site, dataInput, '.rds'))
+# fit2 <- readRDS(paste("/home/phuong/pCloudDrive/PMA analysis results/FoI/RDS/FOI  TV groupAge",groupAge,"step_year",step_year,site, dataInput, '.rds'))
+# fit3<- readRDS(paste("/home/phuong/pCloudDrive/PMA analysis results/FoI/RDS/FOI  SS groupAge",groupAge,site, dataInput, '.rds'))
+# fit4<- readRDS(paste("/home/phuong/pCloudDrive/PMA analysis results/FoI/RDS/FOI TVSS groupAge",groupAge,"step_year",step_year,site, dataInput, '.rds'))
+
+ 
 # Extract pointwise log-likelihood
 # using merge_chains=FALSE returns an array, which is easier to 
 # use with relative_eff()
-loglike1 = extract_log_lik(fit1, parameter_name = "log_like", merge_chains = T)
-loglike2.1 = extract_log_lik(fit2.1, parameter_name = "log_like", merge_chains = T)
-loglike2.2 = extract_log_lik(fit2.2, parameter_name = "log_like", merge_chains = T)
-loglike2.3 = extract_log_lik(fit2.3, parameter_name = "log_like", merge_chains = T)
-loglike2.4 = extract_log_lik(fit2.4, parameter_name = "log_like", merge_chains = T)
-loglike2.5 = extract_log_lik(fit2.5, parameter_name = "log_like", merge_chains = T)
-loglike3 = extract_log_lik(fit3, parameter_name = "log_like", merge_chains = T)
-loglike4.1 = extract_log_lik(fit4.1, parameter_name = "log_like", merge_chains = T)
-loglike4.2 = extract_log_lik(fit4.2, parameter_name = "log_like", merge_chains = T)
-loglike4.3 = extract_log_lik(fit4.3, parameter_name = "log_like", merge_chains = T)
-loglike4.4 = extract_log_lik(fit4.4, parameter_name = "log_like", merge_chains = T)
-loglike4.5 = extract_log_lik(fit4.5, parameter_name = "log_like", merge_chains = T)
+
+loglike = extract_log_lik(fit, parameter_name = "log_like", merge_chains = T)
+
+# loglike1 = extract_log_lik(fit1, parameter_name = "log_like", merge_chains = T)
+# loglike2 = extract_log_lik(fit2, parameter_name = "log_like", merge_chains = T)
+# loglike3 = extract_log_lik(fit3, parameter_name = "log_like", merge_chains = T)
+# loglike4 = extract_log_lik(fit4, parameter_name = "log_like", merge_chains = T)
+
 
 
 ```
@@ -64,18 +66,27 @@ loglike4.5 = extract_log_lik(fit4.5, parameter_name = "log_like", merge_chains =
 # fit <- fit1
 # util$check_all_diagnostics(fit)
 
-posterior1 <- rstan::extract(fit1) # specify package rstan rather than tidyr
-posterior2.1 <- rstan::extract(fit2.1) # specify package rstan rather than tidyr
-posterior2.2 <- rstan::extract(fit2.2) # specify package rstan rather than tidyr
-posterior2.3 <- rstan::extract(fit2.3) # specify package rstan rather than tidyr
-posterior2.4 <- rstan::extract(fit2.4) # specify package rstan rather than tidyr
-posterior2.5 <- rstan::extract(fit2.5) # specify package rstan rather than tidyr
-posterior3 <- rstan::extract(fit3) # specify package rstan rather than tidyr
-posterior4.1 <- rstan::extract(fit4.1) # specify package rstan rather than tidyr
-posterior4.2 <- rstan::extract(fit4.2) # specify package rstan rather than tidyr
-posterior4.3 <- rstan::extract(fit4.3) # specify package rstan rather than tidyr
-posterior4.4 <- rstan::extract(fit4.4) # specify package rstan rather than tidyr
-posterior4.5 <- rstan::extract(fit4.5) # specify package rstan rather than tidyr
+posterior <- rstan::extract(fit) # specify package rstan rather than tidyr
+
+# posterior1 <- rstan::extract(fit1) # specify package rstan rather than tidyr
+# posterior2 <- rstan::extract(fit2) # specify package rstan rather than tidyr
+# posterior3 <- rstan::extract(fit3) # specify package rstan rather than tidyr
+# posterior4 <- rstan::extract(fit4) # specify package rstan rather than tidyr
+
+# plot(posterior1$lambda,posterior1$sumloglike)
+
+
+medianLL <- median(posterior$sumloglike)
+
+# medianLL1 <- median(posterior1$sumloglike)
+# medianLL2 <- median(posterior2$sumloglike)
+# medianLL3 <- median(posterior3$sumloglike)
+# medianLL4 <- median(posterior4$sumloglike)
+
+# meanLL1 <- mean(posterior1$sumloglike)
+# meanLL2 <- mean(posterior2$sumloglike)
+# meanLL3 <- mean(posterior3$sumloglike)
+# meanLL4 <- mean(posterior4$sumloglike)
 
 
 ```
@@ -96,76 +107,37 @@ cal.AIC <- function(LL, k){
   AIC = -2*LL + 2*k
   print(AIC)
 }
-# #HC
+
+if(model == "cons"){
+  AIC <- cal.AIC( LL= median(posterior$sumloglike), k = 1)
+  AICc <- cal.AIC.c( LL= median(posterior$sumloglike), k = 1, n=dataPoint)
+}
+if(model == "TV"){
+  AIC2 <- cal.AIC( LL= median(posterior$sumloglike), k = ceiling(dataYear/step_year))
+  AICc2 <- cal.AIC.c( LL= median(posterior$sumloglike), k = dataYear/step_year, n=dataPoint)#TV 
+}
+if(model == "SS"){
+  AIC <- cal.AIC( LL= median(posterior$sumloglike), k = 4)
+  AICc <- cal.AIC.c( LL= median(posterior$sumloglike), k = 4, n=dataPoint)
+}
+if(model == "TVSS"){
+  AIC <- cal.AIC( LL= median(posterior$sumloglike), k = ceiling(dataYear/step_year)*4)#TVSS
+  AICc <- cal.AIC.c( LL= median(posterior$sumloglike), k = ceiling(dataYear/step_year)*4, n=dataPoint)#TVSS
+}
+
+
 # ##AIC :
 # AIC1 <- cal.AIC( LL= median(posterior1$sumloglike), k = 1)#cons
-# 
-# AIC2.1 <- cal.AIC( LL= median(posterior2.1$sumloglike), k = 35)#TV
-# AIC2.2 <- cal.AIC( LL= median(posterior2.2$sumloglike), k = 18)#TV
-# AIC2.3 <- cal.AIC( LL= median(posterior2.3$sumloglike), k = 12)#TV
-# AIC2.4 <- cal.AIC( LL= median(posterior2.4$sumloglike), k = 9)#TV
-# AIC2.5 <- cal.AIC( LL= median(posterior2.5$sumloglike), k = 7)#TV
-# 
+# AIC2 <- cal.AIC( LL= median(posterior2$sumloglike), k = ceiling(dataYear/step_year))#TV
 # AIC3 <- cal.AIC( LL= median(posterior3$sumloglike), k = 4)#SS
-# 
-# AIC4.1 <- cal.AIC( LL= median(posterior4.1$sumloglike), k = 140)#TVSS
-# AIC4.2 <- cal.AIC( LL= median(posterior4.2$sumloglike), k = 72)#TVSS
-# AIC4.3 <- cal.AIC( LL= median(posterior4.3$sumloglike), k = 48)#TVSS
-# AIC4.4 <- cal.AIC( LL= median(posterior4.4$sumloglike), k = 36)#TVSS
-# AIC4.5 <- cal.AIC( LL= median(posterior4.5$sumloglike), k = 28)#TVSS
-# 
+# AIC4 <- cal.AIC( LL= median(posterior4$sumloglike), k = ceiling(dataYear/step_year)*4)#TVSS
 # ##AICc :
-# AICc1 <- cal.AIC.c( LL= median(posterior1$sumloglike), k = 1, n=138)#cons
+# AICc1 <- cal.AIC.c( LL= median(posterior1$sumloglike), k = 1, n=dataPoint)#cons
 # 
-# AICc2.1 <- cal.AIC.c( LL= median(posterior2.1$sumloglike), k = 35, n=138)#TV
-# AICc2.2 <- cal.AIC.c( LL= median(posterior2.2$sumloglike), k = 18, n=138)#TV
-# AICc2.3 <- cal.AIC.c( LL= median(posterior2.3$sumloglike), k = 12, n=138)#TV
-# AICc2.4 <- cal.AIC.c( LL= median(posterior2.4$sumloglike), k = 9, n=138)#TV
-# AICc2.5 <- cal.AIC.c( LL= median(posterior2.5$sumloglike), k = 7, n=138)#TV
+# AICc2 <- cal.AIC.c( LL= median(posterior2$sumloglike), k = dataYear/step_year, n=dataPoint)#TV
+# AICc3 <- cal.AIC.c( LL= median(posterior3$sumloglike), k = 4, n=dataPoint)#SS
 # 
-# AICc3 <- cal.AIC.c( LL= median(posterior3$sumloglike)), k = 4, n=138)#SS
-# 
-# AICc4.1 <- cal.AIC.c( LL= median(posterior4.1$sumloglike), k = 140, n=138)#TVSS
-# AICc4.2 <- cal.AIC.c( LL= median(posterior4.2$sumloglike), k = 72, n=138)#TVSS
-# AICc4.3 <- cal.AIC.c( LL= median(posterior4.3$sumloglike), k = 48, n=138)#TVSS
-# AICc4.4 <- cal.AIC.c( LL= median(posterior4.4$sumloglike), k = 36, n=138)#TVSS
-# AICc4.5 <- cal.AIC.c( LL= median(posterior4.5$sumloglike), k = 28, n=138)#TVSS
-
-#KH
-##AIC :
-AIC1 <- cal.AIC( LL= median(posterior1$sumloglike), k = 1)#cons
-
-AIC2.1 <- cal.AIC( LL= median(posterior2.1$sumloglike), k = 36)#TV
-AIC2.2 <- cal.AIC( LL= median(posterior2.2$sumloglike), k = 18)#TV
-AIC2.3 <- cal.AIC( LL= median(posterior2.3$sumloglike), k = 12)#TV
-AIC2.4 <- cal.AIC( LL= median(posterior2.4$sumloglike), k = 9)#TV
-AIC2.5 <- cal.AIC( LL= median(posterior2.5$sumloglike), k = 8)#TV
-
-AIC3 <- cal.AIC( LL= round(median(posterior3$sumloglike)), k = 4)#SS
-
-AIC4.1 <- cal.AIC( LL= median(posterior4.1$sumloglike), k = 144)#TVSS
-AIC4.2 <- cal.AIC( LL= median(posterior4.2$sumloglike), k = 72)#TVSS
-AIC4.3 <- cal.AIC( LL= median(posterior4.3$sumloglike), k = 48)#TVSS
-AIC4.4 <- cal.AIC( LL= median(posterior4.4$sumloglike), k = 36)#TVSS
-AIC4.5 <- cal.AIC( LL= median(posterior4.5$sumloglike), k = 32)#TVSS
-
-##AICc 
-AICc1 <- cal.AIC.c( LL= median(posterior1$sumloglike), k = 1, n=127)#cons
-
-AICc2.1 <- cal.AIC.c( LL= median(posterior2.1$sumloglike), k = 36, n=127)#TV
-AICc2.2 <- cal.AIC.c( LL= median(posterior2.2$sumloglike), k = 18, n=127)#TV
-AICc2.3 <- cal.AIC.c( LL= median(posterior2.3$sumloglike), k = 12, n=127)#TV
-AICc2.4 <- cal.AIC.c( LL= median(posterior2.4$sumloglike), k = 9, n=127)#TV
-AICc2.5 <- cal.AIC.c( LL= median(posterior2.5$sumloglike), k = 8, n=127)#TV
-
-AICc3 <- cal.AIC.c( LL= median(posterior3$sumloglike), k = 4, n=127)#SS
-
-AICc4.1 <- cal.AIC.c( LL= median(posterior4.1$sumloglike), k = 144, n=127)#TVSS
-AICc4.2 <- cal.AIC.c( LL= median(posterior4.2$sumloglike), k = 72, n=127)#TVSS
-AICc4.3 <- cal.AIC.c( LL= median(posterior4.3$sumloglike), k = 48, n=127)#TVSS
-AICc4.4 <- cal.AIC.c( LL= median(posterior4.4$sumloglike), k = 36, n=127)#TVSS
-AICc4.5 <- cal.AIC.c( LL= median(posterior4.5$sumloglike), k = 32, n=127)#TVSS
-
+# AICc4 <- cal.AIC.c( LL= median(posterior4$sumloglike), k = ceiling(dataYear/step_year)*4, n=dataPoint)#TVSS
 
 ```
 
