@@ -27,10 +27,10 @@ options(mc.cores = parallel::detectCores())
 ## input site, data input, no. of steps for years
 ```{r data input & model selection, echo=FALSE, message=FALSE}
 # Changeable 
-model <- "TVSS" # cons, TV,SS, TVSS
+model <- "cons" # cons, TV,SS, TVSS
 groupAge <- 5 # 1,5 # Grouping Input data by group of ....
 step_year <- 1 # non-TV models, input 0
-site <- "KH" #KH, HC,HC&KH, KH&HC
+site <- "HC&KH" #KH, HC,HC&KH
 dataInput <-"C1D1" # C1D1, C1F1, C1D3, C1F3
 #for time-varying model, options are 1,2,3,4,5
 
@@ -111,7 +111,11 @@ if (site=="HC"){
 if(site == "KH"){
     p_year=dplyr::filter(pop,Site=="KH")%>%group_by(AgeGroup,YEAR,Site)%>%dplyr::count(pred.serotype)%>%spread(pred.serotype,n)}
 if(site == "KH&HC"|site =="HC&KH"){
-    p_year=dplyr::filter(pop)%>%group_by(AgeGroup,YEAR,Site)%>%dplyr::count(pred.serotype)%>%spread(pred.serotype,n)}
+    p_year=dplyr::filter(pop)%>%group_by(AgeGroup,YEAR)%>%dplyr::count(pred.serotype)%>%spread(pred.serotype,n)
+    p_year$Site <- "HC&KH" # add Site-> same no.columns-> later convenient
+    #Rearrange by column index
+    p_year <- p_year[,colnames(p_year)[c(1:2,9,3:8)]]
+    }
 
 # Sorting "YEAR" in chronological order
 p_year<-p_year[order(p_year$YEAR),]
@@ -259,16 +263,16 @@ foisummary <- summary(fit)
 foisummary
 
 tab <- data.frame(foisummary$summary)
-# # # saving fits
-# if (model == "cons") {
-#   saveRDS(fit,paste("/home/phuong/pCloudDrive/PMA analysis results/FoI/RDS/FOI",model,"groupAge",groupAge,site,dataInput,".rds"))
-# } else if (model == "SS") {
-#   saveRDS(fit, paste("/home/phuong/pCloudDrive/PMA analysis results/FoI/RDS/FOI",model,"groupAge",groupAge,site,dataInput, ".rds"))
-# } else if (model == "TV") {
-#   saveRDS(fit, paste("/home/phuong/pCloudDrive/PMA analysis results/FoI/RDS/FOI",model,"groupAge",groupAge,"step_year",step_year,site,dataInput, ".rds"))
-# }else {
-#   saveRDS(fit,paste("/home/phuong/pCloudDrive/PMA analysis results/FoI/RDS/FOI",model,"groupAge",groupAge,"step_year",step_year,site,dataInput,".rds"))
-# }
+# # saving fits
+if (model == "cons") {
+  saveRDS(fit,paste("/home/phuong/pCloudDrive/PMA analysis results/FoI/RDS/FOI",model,"groupAge",groupAge,site,dataInput,".rds"))
+} else if (model == "SS") {
+  saveRDS(fit, paste("/home/phuong/pCloudDrive/PMA analysis results/FoI/RDS/FOI",model,"groupAge",groupAge,site,dataInput, ".rds"))
+} else if (model == "TV") {
+  saveRDS(fit, paste("/home/phuong/pCloudDrive/PMA analysis results/FoI/RDS/FOI",model,"groupAge",groupAge,"step_year",step_year,site,dataInput, ".rds"))
+}else {
+  saveRDS(fit,paste("/home/phuong/pCloudDrive/PMA analysis results/FoI/RDS/FOI",model,"groupAge",groupAge,"step_year",step_year,site,dataInput,".rds"))
+}
 
 # # plot to see whether estimated parameter is convergence or not: traceplot
 # plottedRows <- 1 : nrow(posterior$lambda)
@@ -279,7 +283,7 @@ tab <- data.frame(foisummary$summary)
 
 #Dianostic
 ```{r examing the fit, echo=T, eval=F}
-
+#eval=F: prevent the codes unless doing it manually
 util$check_all_diagnostics(fit)
 
 library(purrr)
