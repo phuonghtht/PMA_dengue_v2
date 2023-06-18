@@ -17,7 +17,7 @@ rm(list=ls())
 
 library(rstan)
 util <- new.env()
-source('/home/phuong/Dropbox/PMA_Github/PMA_dengue_v2/PMA codes/FoI/stan_utility.R', local=util)
+source('./codes/stan_utility.R', local=util)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 
@@ -53,17 +53,18 @@ dataInput <-"C1D1" # C1D1, C1F1, C1D3, C1F3
 
 
 ##Results from different IS and infecting serotype infering models:
+#~/Dropbox/1.SHARED_FOLDER/slides_June_2018/PMA_batch2To7_July2019/pop data/models/Infecting serotype Model  # original locations
 if ( dataInput == "C1D1"){
-    data <- read.csv("~/Dropbox/1.SHARED_FOLDER/slides_June_2018/PMA_batch2To7_July2019/pop data/models/Infecting serotype Model/PredictedIS_B23_567_pred.serotype_C1D1.csv")  
+    data <- read.csv("./data/Infecting_Models/PredictedIS_B23_567_pred.serotype_C1D1.csv")  
 }
 if ( dataInput == "C1D3"){
-    data <- read.csv("~/Dropbox/1.SHARED_FOLDER/slides_June_2018/PMA_batch2To7_July2019/pop data/models/Infecting serotype Model/PredictedIS_B23_567_pred.serotype_C1D3.csv")  
+    data <- read.csv("./data/Infecting_Models/PredictedIS_B23_567_pred.serotype_C1D3.csv")  
 }
 if ( dataInput == "C1F1"){
-    data <- read.csv("~/Dropbox/1.SHARED_FOLDER/slides_June_2018/PMA_batch2To7_July2019/pop data/models/Infecting serotype Model/PredictedIS_B23_567_pred.serotype_HomoAssigned_C1F1.csv")  
+    data <- read.csv("./data/Infecting_Models/PredictedIS_B23_567_pred.serotype_HomoAssigned_C1F1.csv")  
 }
 if ( dataInput == "C1F3"){
-    data <- read.csv("~/Dropbox/1.SHARED_FOLDER/slides_June_2018/PMA_batch2To7_July2019/pop data/models/Infecting serotype Model/PredictedIS_B23_567_pred.serotype_HomoAssigned_C1F3.csv")  
+    data <- read.csv("./data/Infecting_Models/PredictedIS_B23_567_pred.serotype_HomoAssigned_C1F3.csv")  
 }
 
 data$YEAR <- as.factor(data$YEAR)
@@ -226,22 +227,22 @@ datapp<- list(a = b,
 # Stan codes 
 ```{r}
 if (model == "cons"&groupAge==1){
-  FOI_Dengue <-"~/Dropbox/PMA_Github/PMA_dengue_v2/PMA codes/FoI/Stan/FOI_constant_MLE.stan"
+  FOI_Dengue <-"./codes/FoI/Stan/FOI_constant_MLE.stan"
 }
 if (model == "cons"&groupAge==5){
-  FOI_Dengue <-"~/Dropbox/PMA_Github/PMA_dengue_v2/PMA codes/FoI/Stan/FOI_constant_MLE_GroupAge.stan"
+  FOI_Dengue <-"./codes/FoI/Stan/FOI_constant_MLE_GroupAge.stan"
 }
 if (model == "SS"&groupAge==1){
-  FOI_Dengue <-"~/Dropbox/PMA_Github/PMA_dengue_v2/PMA codes/FoI/Stan/FOI_serotype_specific_MLE.stan"
+  FOI_Dengue <-"./codes/FoI/Stan/FOI_serotype_specific_MLE.stan"
 }
 if (model == "SS"&groupAge==5){
-  FOI_Dengue <-"~/Dropbox/PMA_Github/PMA_dengue_v2/PMA codes/FoI/Stan/FOI_serotype_specific_MLE_GroupAge.stan"
+  FOI_Dengue <-"./codes/FoI/Stan/FOI_serotype_specific_MLE_GroupAge.stan"
 }
 if (model == "TV"){
-  FOI_Dengue <- "~/Dropbox/PMA_Github/PMA_dengue_v2/PMA codes/FoI/Stan/FOI_time varying_MLE.stan"
+  FOI_Dengue <- "./codes/FoI/Stan/FOI_time varying_MLE.stan"
 }
 if (model == "TVSS"){
-  FOI_Dengue <-"~/Dropbox/PMA_Github/PMA_dengue_v2/PMA codes/FoI/Stan/FOI_time varying_serotype specific_MLE.stan"
+  FOI_Dengue <-"./codes/FoI/Stan/FOI_time varying_serotype specific_MLE.stan"
 }
 
 ```
@@ -264,14 +265,15 @@ foisummary
 
 tab <- data.frame(foisummary$summary)
 # # saving fits
+#trace previous result here: /home/phuong/pCloudDrive/PMA analysis results/FoI/RDS/FOI
 if (model == "cons") {
-  saveRDS(fit,paste("/home/phuong/pCloudDrive/PMA analysis results/FoI/RDS/FOI",model,"groupAge",groupAge,site,dataInput,".rds"))
+  saveRDS(fit,paste("./output/FoI/RDS/FOI",model,"groupAge",groupAge,site,dataInput,".rds"))
 } else if (model == "SS") {
-  saveRDS(fit, paste("/home/phuong/pCloudDrive/PMA analysis results/FoI/RDS/FOI",model,"groupAge",groupAge,site,dataInput, ".rds"))
+  saveRDS(fit, paste("./output/FoI/RDS/FOI",model,"groupAge",groupAge,site,dataInput, ".rds"))
 } else if (model == "TV") {
-  saveRDS(fit, paste("/home/phuong/pCloudDrive/PMA analysis results/FoI/RDS/FOI",model,"groupAge",groupAge,"step_year",step_year,site,dataInput, ".rds"))
+  saveRDS(fit, paste("./output/FoI/RDS/FOI",model,"groupAge",groupAge,"step_year",step_year,site,dataInput, ".rds"))
 }else {
-  saveRDS(fit,paste("/home/phuong/pCloudDrive/PMA analysis results/FoI/RDS/FOI",model,"groupAge",groupAge,"step_year",step_year,site,dataInput,".rds"))
+  saveRDS(fit,paste("./output/FoI/RDS/FOI",model,"groupAge",groupAge,"step_year",step_year,site,dataInput,".rds"))
 }
 
 # # plot to see whether estimated parameter is convergence or not: traceplot
@@ -418,7 +420,7 @@ lamb <- ggplot(p, aes(x=year,y=lambda)) + geom_violin()+
   stat_summary(fun.data=mean_sdl, 
                geom="pointrange", color="red")#Add mean and standard deviation
 # # save the figure
-ggsave(filename=paste("/home/phuong/pCloudDrive/PMA analysis results/FoI/Lambda/FOI",model,"groupAge",groupAge,site,dataInput,".png"),plot=lamb)
+ggsave(filename=paste("./output/FoI/Lambda/FOI",model,"groupAge",groupAge,site,dataInput,".png"),plot=lamb)
 lamb
 }
 
@@ -446,7 +448,7 @@ lamb = ggplot(p, aes(x=DENV,y=lambda)) + geom_violin()+
   stat_summary(fun.data=mean_sdl, 
                  geom="pointrange", color="red")#Add mean and standard deviation
 
-ggsave(filename = paste("/home/phuong/pCloudDrive/PMA analysis results/FoI/Lambda/FOI",model,"groupAge",groupAge,site,dataInput,".png" ),plot=lamb)
+ggsave(filename = paste("./output/FoI/Lambda/FOI",model,"groupAge",groupAge,site,dataInput,".png" ),plot=lamb)
 lamb
 
 }
@@ -484,7 +486,7 @@ lamb <- ggplot(p, aes(x=YEAR,y=lambda)) + geom_violin()+
   # geom_boxplot(width=0.1)+# add median and quartile
   stat_summary(fun.data=mean_sdl, 
                geom="pointrange", color="red")#Add mean and standard deviation
-ggsave(filename=paste("/home/phuong/pCloudDrive/PMA analysis results/FoI/Lambda/FOI",model,"groupAge",groupAge,"step_year",step_year,site,dataInput,".png"), plot = lamb)
+ggsave(filename=paste("./output/FoI/Lambda/FOI",model,"groupAge",groupAge,"step_year",step_year,site,dataInput,".png"), plot = lamb)
 
 lamb
 }
@@ -617,7 +619,7 @@ library(grid)
 lamb <- grid.arrange(p1,p2,p3,p4, ncol=2,nrow=2, top =textGrob(paste("FoI",model,step_year,"yr(s) groupAge",groupAge,site,dataInput),gp=gpar(fontsize=20,col = "blue")))
 
 # save the figure
-ggsave(filename=paste("/home/phuong/pCloudDrive/PMA analysis results/FoI/Lambda/FOI",model,"groupAge",groupAge,"step_year",step_year,site,dataInput,".png"), plot = lamb)
+ggsave(filename=paste("./output/FoI/Lambda/FOI",model,"groupAge",groupAge,"step_year",step_year,site,dataInput,".png"), plot = lamb)
 }
 
 ```
